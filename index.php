@@ -1,6 +1,8 @@
 <?php
 require 'config/config.php';
+require 'app/classes/Helper.php';
 require 'app/classes/Db.php';
+require 'app/classes/User.php';
 
 $db = new Db();
 
@@ -9,7 +11,11 @@ if (!$db->connect) {
 }
 
 if (isset($_COOKIE['token'])) {
-    echo 'Проверяем авторизацию';
+    echo 'Вы авторизованы';
 } else {
-    echo 'Кидаем на авторизацию';
+    if (isset($_GET['type']) && $_GET['type'] == 'reg') {
+        include 'app/views/reg.php';
+    } else {
+        include 'app/views/login.php';
+    }
 }
