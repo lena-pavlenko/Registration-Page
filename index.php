@@ -16,7 +16,7 @@ if (isset($_COOKIE['token']) && isset($_COOKIE['username'])) {
     $user = new User($db->connect);
 
     if ($user->checkAuth($_COOKIE['username'], $_COOKIE['token'])) {
-        echo 'Вы авторизованы';
+        include 'app/views/cabinet.php';
     } else {
         include 'app/views/login.php';
     }

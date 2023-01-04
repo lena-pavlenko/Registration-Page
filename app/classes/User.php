@@ -9,7 +9,9 @@ class User
         $this->db = $db;
     }
 
-    // Добавление нового юзера
+    /**
+     * Добавление нового юзера
+     */
     public function addUser(string $username, string $password) :bool
     {
         $password = password_hash($password, PASSWORD_DEFAULT);
@@ -38,7 +40,9 @@ class User
         return false;
     }
 
-    // Создание токена для авторизации
+    /**
+     * Создание токена для авторизации
+     */
     private function setAuth(int $user_id, string $username) :void
     {
         setcookie("token", $this->token, time()+259200, "/", $_SERVER['HTTP_HOST']);
@@ -53,7 +57,9 @@ class User
         $stmt->execute($userData);
     }
 
-    // Авторизация юзера
+    /**
+     * Авторизация пользователя
+     */
     public function auth(string $username, string $password) :bool
     {   
         // Выбирает данные из таблицы
@@ -75,6 +81,9 @@ class User
         return false;
     }
 
+    /**
+     * Сравнение значений куки со значениями в БД для проверки авторизации
+     */
     public function checkAuth(string $username, string $token) :bool
     {
         $sql = 'SELECT token FROM users WHERE username = :username';
@@ -91,5 +100,14 @@ class User
         }
 
         return false;
+    }
+
+    /**
+     * Удаление куки
+     */
+    public function logout() :void
+    {
+        setcookie("token", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
+        setcookie("username", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
     }
 }
