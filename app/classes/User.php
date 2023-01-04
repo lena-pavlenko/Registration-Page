@@ -9,9 +9,11 @@ class User
         $this->db = $db;
     }
 
+    // Добавление нового юзера
     public function addUser(string $username, string $password) :bool
     {
         $password = password_hash($password, PASSWORD_DEFAULT);
+        // Добавление данных в таблицу
         $sql = 
         'INSERT INTO users 
         (username, password, date_created, is_confirmed, is_deleted) 
@@ -36,9 +38,11 @@ class User
         return false;
     }
 
-    private function setAuth($user_id) :void
+    // Создание токена для авторизации
+    private function setAuth(int $user_id, string $username) :void
     {
         setcookie("token", $this->token, time()+259200, "/", $_SERVER['HTTP_HOST']);
+        setcookie("username", $username, time()+259200, "/", $_SERVER['HTTP_HOST']);
         $sql = 'UPDATE users SET token = :token, date_updated = :date_updated WHERE id = :id';
         $userData = [
             'token' => $this->token,
@@ -49,8 +53,10 @@ class User
         $stmt->execute($userData);
     }
 
+    // Авторизация юзера
     public function auth(string $username, string $password) :bool
-    {
+    {   
+        // Выбирает данные из таблицы
         $sql = 'SELECT id, password FROM users WHERE username = :username';
         $userData = [
             'username' => $username
@@ -62,9 +68,27 @@ class User
        
         if (password_verify($password, $user['password'])) {
             $this->token = Helper::tokenGenerate();
-            $this->setAuth($user['id']);
+            $this->setAuth($user['id'], $username);
             return true;
         } 
+
+        return false;
+    }
+
+    public function checkAuth(string $username, string $token) :bool
+    {
+        $sql = 'SELECT token FROM users WHERE username = :username';
+        $userData = [
+            'username' => $username
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $user = $stmt->fetch();
+
+        if ($user['token'] == $token) {
+            return true;
+        }
 
         return false;
     }
