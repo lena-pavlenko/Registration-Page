@@ -9,11 +9,29 @@ class User
         $this->db = $db;
     }
 
+    public function getUserByUsername(string $username): ?array
+    {
+        $sql = 'SELECT id, password FROM users WHERE username = :username';
+        $userData = [
+            'username' => $username
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $user = $stmt->fetch();
+
+        return $user;
+    }
+
     /**
      * Добавление нового юзера
      */
-    public function addUser(string $username, string $password) :bool
+    public function addUser(string $username, string $password): bool
     {
+        $user = $this->getUserByUsername($username);
+        if (!empty($user)) {
+            return false;
+        }
         $password = password_hash($password, PASSWORD_DEFAULT);
         // Добавление данных в таблицу
         $sql = 
@@ -43,7 +61,7 @@ class User
     /**
      * Создание токена для авторизации
      */
-    private function setAuth(int $user_id, string $username) :void
+    private function setAuth(int $user_id, string $username): void
     {
         setcookie("token", $this->token, time()+259200, "/", $_SERVER['HTTP_HOST']);
         setcookie("username", $username, time()+259200, "/", $_SERVER['HTTP_HOST']);
@@ -60,18 +78,14 @@ class User
     /**
      * Авторизация пользователя
      */
-    public function auth(string $username, string $password) :bool
+    public function auth(string $username, string $password): bool
     {   
         // Выбирает данные из таблицы
-        $sql = 'SELECT id, password FROM users WHERE username = :username';
-        $userData = [
-            'username' => $username
-        ];
+        $user = $this->getUserByUsername($username);
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $user = $stmt->fetch();
-       
+        if (empty($user)) {
+            return false;
+        }
         if (password_verify($password, $user['password'])) {
             $this->token = Helper::tokenGenerate();
             $this->setAuth($user['id'], $username);
@@ -84,7 +98,7 @@ class User
     /**
      * Сравнение значений куки со значениями в БД для проверки авторизации
      */
-    public function checkAuth(string $username, string $token) :bool
+    public function checkAuth(string $username, string $token): bool
     {
         $sql = 'SELECT token FROM users WHERE username = :username';
         $userData = [
@@ -105,9 +119,55 @@ class User
     /**
      * Удаление куки
      */
-    public function logout() :void
+    public function logout(): void
     {
         setcookie("token", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
         setcookie("username", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
+    }
+
+    public function setName(int $user_id, array $data): bool
+    {
+        if (empty($this->getUserInfo($user_id))) {
+            $sql = 
+            'INSERT INTO user_info (id_user, name, surname, birthday, sex, city, date_created) VALUES (:id_user, :name, :surname, :birthday, :sex, :city, :date_created)';
+
+            $userData = [
+                'id_user' => $user_id,
+                'date_created' => date('Y-m-d H:i:s')
+            ];
+        } else {
+            $sql = 'UPDATE user_info SET name = :name, surname = :surname, birthday = :birthday, sex = :sex, city = :city, date_updated = :date_updated WHERE id_user = :id_user';
+
+            $userData = [
+                'id_user' => $user_id,
+                'date_updated' => date('Y-m-d H:i:s')
+            ];
+        }
+
+        $userData = array_merge($data, $userData);
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function getUserInfo(int $user_id): ?array
+    {
+        $sql = 'SELECT id, id_user, name, surname, birthday, sex, city FROM user_info WHERE id_user = :id_user';
+        $userData = [
+            'id_user' => $user_id
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $userInfo = $stmt->fetch();
+
+        if (!$userInfo) {
+            return NULL;
+        }
+        
+        return $userInfo;
     }
 }

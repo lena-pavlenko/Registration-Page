@@ -10,11 +10,12 @@ $db = new Db();
 if (!$db->connect) {
     die('Нужно подключиться к базе данных');
 }
-
+ob_start();
 // Подключение файлов для регистрации и авторизации
 if (isset($_COOKIE['token']) && isset($_COOKIE['username'])) {
     $user = new User($db->connect);
 
+ 
     if ($user->checkAuth($_COOKIE['username'], $_COOKIE['token'])) {
         include 'app/views/cabinet.php';
     } else {
@@ -27,3 +28,5 @@ if (isset($_COOKIE['token']) && isset($_COOKIE['username'])) {
         include 'app/views/login.php';
     }
 }
+$content = ob_get_clean();
+include 'app/views/layouts/default.php';
