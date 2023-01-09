@@ -2,6 +2,17 @@
     $user = new User($db->connect);
     $userData = $user->getUserByUsername($_COOKIE['username']);
 
+    if (isset($_POST['delete_profile'])) {
+        if ($user->changeAccessProfile($_COOKIE['username'], 1)) {
+            header('Location: /');
+        }
+    }
+    if (isset($_POST['restore_profile'])) {
+        if ($user->changeAccessProfile($_COOKIE['username'], 0)) {
+            header('Location: /');
+        }
+    }
+
     if (isset($_POST['log_out'])) {
         $user->logout();
         header('Location: /');
@@ -18,14 +29,33 @@
     }
 
     $userInfo = $user->getUserInfo($userData['id']);
+
+    $date = new DateTime(date('Y-m-d H:i'), new DateTimeZone(date_default_timezone_get()));
+    $date->setTimezone(new DateTimeZone('Europe/London'));
+
 ?>
 
-
+<?php if ($userData['is_deleted'] == 1) :?>
+    <div class="row mb-5">
+        <div class="col-12 ">
+            <div class="card p-3">
+                <h1>Личный кабинет</h1>
+                <p>Приветствуем вас, <?= $userInfo['name'] ? $userInfo['name'] : $_COOKIE['username']; ?></p>
+                <div class="alert alert-warning" role="alert">
+                    Ваш аккаунт был удален <?= $userData['du']; ?>
+                </div>
+                <form action="/" method="post" class="d-flex">
+                    <button type="submit" name="restore_profile" class="btn btn-success">Восстановить аккаунт</button>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php else: ?>
 <div class="row mb-5">
     <div class="col-12 ">
         <div class="card p-3">
             <h1>Личный кабинет</h1>
-            <p>Приветствуем вас, email</p>
+            <p>Приветствуем вас, <?= $userInfo['name'] ? $userInfo['name'] : $_COOKIE['username']; ?></p>
         </div>
     </div>
 </div>
@@ -33,16 +63,20 @@
     <div class="col-4">
         <div class="card p-3">
             <div class="content">
-                <p>Дата регистрации: </p>
-                <p>Проведено на сайте: </p>
-                <p>Текущее время: </p>
-                <p>Время в Лондоне: </p>
+                <p>Дата регистрации: <?= $userData['dc']; ?></p>
+                <p>Проведено на сайте: <?= Helper::convertTime(time() - strtotime($userData['dc'])); ?></p>
+                <p>Текущее время: <?= date('H:i'); ?></p>
+                <p>Время в Лондоне: <?= $date->format('H:i'); ?> </p>
             </div>
             <form action="/" method="post" class="mt-3 d-flex justify-content-end">
                 <button type="submit" name="log_out" class="btn btn-danger">Выйти</button>
             </form>
         </div>
-       
+        <div class="card mt-3 p-2">
+            <form action="/" method="post" class="d-flex">
+                <button type="submit" name="delete_profile" class="btn btn-secondary">Удалить аккаунт</button>
+            </form>
+        </div>
     </div>
     <div class="col-8">
         <div class="card p-3">
@@ -60,3 +94,4 @@
         </div>
     </div>
 </div>
+<?php endif; ?>

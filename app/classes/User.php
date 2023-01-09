@@ -11,7 +11,7 @@ class User
 
     public function getUserByUsername(string $username): ?array
     {
-        $sql = 'SELECT id, password FROM users WHERE username = :username';
+        $sql = 'SELECT id, password, date_created as `dc`, date_updated as `du`, is_deleted FROM users WHERE username = :username';
         $userData = [
             'username' => $username
         ];
@@ -125,6 +125,9 @@ class User
         setcookie("username", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
     }
 
+    /**
+     * Установка значений в поля в ЛК
+     */
     public function setName(int $user_id, array $data): bool
     {
         if (empty($this->getUserInfo($user_id))) {
@@ -153,6 +156,9 @@ class User
         return false;
     }
 
+    /**
+     * Получение личной информации о пользователе
+     */
     public function getUserInfo(int $user_id): ?array
     {
         $sql = 'SELECT id, id_user, name, surname, birthday, sex, city FROM user_info WHERE id_user = :id_user';
@@ -169,5 +175,23 @@ class User
         }
         
         return $userInfo;
+    }
+
+    /**
+     * Удаление и восстановление аккаунта
+     */
+    public function changeAccessProfile(string $username, int $status): bool
+    {
+        $sql = 'UPDATE users SET is_deleted = :is_deleted, date_updated = :date_updated WHERE username = :username';
+        $userData = [
+            'username' => $username,
+            'is_deleted' => $status,
+            'date_updated' => date('Y-m-d H:i:s')
+        ];
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return true;
+        }
+        return false;
     }
 }
