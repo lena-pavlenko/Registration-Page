@@ -14,12 +14,12 @@ class MailHelper
         // Настройки сервера на примере Яндекс почты
         $mail = new PHPMailer;
         $mail->isSMTP();                                     
-        $mail->Host         = 'smtp.yandex.ru';
+        $mail->Host         = MAIL_HOST;
         $mail->SMTPAuth     = true;
-        $mail->Username     = 'pawlencko.alena2010@yandex.ru'; // Если почта для домена, то логин это полный адрес почты
-        $mail->Password     = 'jiiemyhcoyqzjhmz';
+        $mail->Username     = MAIL_USER; // Если почта для домена, то логин это полный адрес почты
+        $mail->Password     = MAIL_PASS;
         $mail->SMTPSecure   = 'TLS';
-        $mail->Port         = 587;
+        $mail->Port         = MAIL_PORT;
 
         // Авторизация
         $mail->CharSet = 'UTF-8';
