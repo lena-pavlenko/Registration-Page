@@ -11,7 +11,7 @@ class User
 
     public function getUserByUsername(string $username): ?array
     {
-        $sql = 'SELECT id, password, date_created as `dc`, date_updated as `du`, is_deleted FROM users WHERE username = :username';
+        $sql = 'SELECT id, password, date_created as `dc`, date_updated as `du`, is_deleted, is_confirmed FROM users WHERE username = :username';
         $userData = [
             'username' => $username
         ];
@@ -19,8 +19,10 @@ class User
         $stmt = $this->db->prepare($sql);
         $stmt->execute($userData); 
         $user = $stmt->fetch();
-
-        return $user;
+        if ($user) {
+            return $user;
+        }
+        return null;
     }
 
     /**
@@ -52,6 +54,9 @@ class User
         $publisher_id = $this->db->lastInsertId();
         
         if($publisher_id > 0) {
+            $link = $this->createMailTokenLink($username, 'Подтвердите аккаунт');
+            MailHelper::mailData($username, 'Подтверждение аккаунта', 'Перейдите по ссылке для активации аккаунта: ' . $link);
+            MailHelper::mail();
             return true;
         }
 
@@ -192,6 +197,56 @@ class User
         if ($statement->execute($userData)){
             return true;
         }
+        return false;
+    }
+
+    /**
+     * Создание ссылки для потверждения аккаунта при регистрации
+     */
+    private function createMailTokenLink(string $username, string $message): ?string
+    {
+        $token = Helper::tokenGenerate(78);
+        $path = $_SERVER['HTTP_HOST'];
+        $link = "<a href='http://$path/confirm.php?token=$token&email=$username'>$message</a>";
+
+        $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated WHERE username = :username';
+        $userData = [
+            'username' => $username,
+            'token_confirm' => $token,
+            'date_updated' => date('Y-m-d H:i:s')
+        ];
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return $link;
+        }
+        return null;
+    }
+
+    public function confirmProfile(string $username, string $token): bool
+    {
+        $sql = 'SELECT token_confirm FROM users WHERE username = :username';
+        $userData = [
+            'username' => $username
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $userToken = $stmt->fetch();
+
+        if ($token == $userToken['token_confirm']) {
+            $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated, is_confirmed = :is_confirmed WHERE username = :username';
+            $userData = [
+                'username' => $username,
+                'token_confirm' => '',
+                'date_updated' => date('Y-m-d H:i:s'),
+                'is_confirmed' => 1
+            ];
+            $statement = $this->db->prepare($sql);
+            if ($statement->execute($userData)){
+                return true;
+            }
+        }
+
         return false;
     }
 }

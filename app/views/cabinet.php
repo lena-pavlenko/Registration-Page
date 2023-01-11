@@ -50,17 +50,32 @@
             </div>
         </div>
     </div>
+<?php elseif($userData['is_confirmed'] == 0): ?>
+    <div class="row mb-5">
+        <div class="col-12 ">
+            <div class="card p-3">
+                <h1>Личный кабинет</h1>
+                <p>Приветствуем вас, <?= isset($userInfo['name']) ? $userInfo['name'] : $_COOKIE['username']; ?></p>
+                <div class="alert alert-warning" role="alert">
+                    Подтвердите Ваш аккаунт. Мы отправили вам письмо на <u><?= $_COOKIE['username']; ?></u> 
+                </div>
+                <form action="/" method="post" class="mt-3 d-flex justify-content-end">
+                    <button type="submit" name="log_out" class="btn btn-danger">Выйти</button>
+                </form>
+            </div>
+        </div>
+    </div>
 <?php else: ?>
 <div class="row mb-5">
     <div class="col-12 ">
         <div class="card p-3">
             <h1>Личный кабинет</h1>
-            <p>Приветствуем вас, <?= $userInfo['name'] ? $userInfo['name'] : $_COOKIE['username']; ?></p>
+            <p>Приветствуем вас, <?= isset($userInfo['name']) ? $userInfo['name'] : $_COOKIE['username']; ?></p>
         </div>
     </div>
 </div>
 <div class="row mb-5">
-    <div class="col-4">
+    <div class="col-lg-4">
         <div class="card p-3">
             <div class="content">
                 <p>Дата регистрации: <?= $userData['dc']; ?></p>
@@ -72,13 +87,13 @@
                 <button type="submit" name="log_out" class="btn btn-danger">Выйти</button>
             </form>
         </div>
-        <div class="card mt-3 p-2">
+        <div class="card mt-3 mb-3 p-2">
             <form action="/" method="post" class="d-flex">
-                <button type="submit" name="delete_profile" class="btn btn-secondary">Удалить аккаунт</button>
+                <button type="submit" name="delete_profile" class="btn btn-secondary ms-auto">Удалить аккаунт</button>
             </form>
         </div>
     </div>
-    <div class="col-8">
+    <div class="col-lg-8">
         <div class="card p-3">
             <form action="/" method="post">
                 <input type="text" name="name" placeholder="Имя" class="form-control mb-3 mt-3" value="<?= $userInfo['name'] ?? ''; ?>">
@@ -89,7 +104,7 @@
                     <option value="female" <?= $userInfo['sex'] == 'female' ? 'selected' : ''; ?>>Женщина</option>
                 </select>
                 <input type="text" name="city" placeholder="Город" class="form-control mb-3" value="<?= $userInfo['city'] ?? ''; ?>">
-                <button type="submit" name="save" class="btn btn-info">Сохранить</button>
+                <button type="submit" name="save" class="btn btn-info ms-auto d-block">Сохранить</button>
             </form>
         </div>
     </div>

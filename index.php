@@ -3,6 +3,9 @@ require 'config/config.php';
 require 'app/classes/Helper.php';
 require 'app/classes/Db.php';
 require 'app/classes/User.php';
+require 'vendor/autoload.php';
+require 'app/classes/MailHelper.php';
+
 
 // Создаем экземпляр класса PDO (PHP Data Objects) - для работы с базой данных
 $db = new Db();

@@ -10,7 +10,8 @@
         $user = new User($db->connect);
         if (!$error) {
             if ($user->addUser($login, $password)) {
-                $success = 'Вы успешно зарегистрированы';
+                $success = 'Вы успешно зарегистрированы. <a href="/">Личный кабинет</a>';
+                
             } else {
                 $error = 'Ошибка регистрации';
             }
@@ -28,7 +29,7 @@
         ?>
         <form action="/?type=reg" method="post">
             <div class="mb-3">
-                <input type="text" name="username" placeholder="Введите логин" class="form-control mb-3">
+                <input type="email" name="username" placeholder="Введите email" class="form-control mb-3">
             </div>
             <div class="mb-3">
                 <input type="password" name="password" placeholder="Введите пароль" class="form-control mb-3">
