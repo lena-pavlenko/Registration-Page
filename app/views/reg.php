@@ -10,40 +10,38 @@
         $user = new User($db->connect);
         if (!$error) {
             if ($user->addUser($login, $password)) {
-                $success = 'Вы успешно зарегистрированы';
+                $success = 'Вы успешно зарегистрированы. <a href="/">Личный кабинет</a>';
+                
+            } else {
+                $error = 'Ошибка регистрации';
             }
         }
     }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация</title>
-</head>
-<body>
-    <?php
-        if ($error) {
-            echo $error;
-        }
-        if($success) {
-            echo $success;
-        } else {
-            ?>
-            <form action="/?type=reg" method="post">
-                <input type="text" name="username" placeholder="Введите логин">
-                <input type="password" name="password" placeholder="Введите пароль">
-                <input type="password" name="password_repeat" placeholder="Повторите пароль">
-                <input type="submit" name="send_reg" value="Зарегистрироваться">
-            </form>
-            <p>
-                Либо <a href="/">Авторизуйтесь</a>
-            </p>
-            <?php
-        }
-    ?>
-    
-</body>
-</html>
+
+<?php
+    if ($error) {
+        echo $error;
+    }
+    if($success) {
+        echo $success;
+    } else {
+        ?>
+        <form action="/?type=reg" method="post">
+            <div class="mb-3">
+                <input type="email" name="username" placeholder="Введите email" class="form-control mb-3">
+            </div>
+            <div class="mb-3">
+                <input type="password" name="password" placeholder="Введите пароль" class="form-control mb-3">
+            </div>
+            <div class="mb-3">
+                <input type="password" name="password_repeat" placeholder="Повторите пароль" class="form-control mb-3">
+            </div>
+            <input type="submit" name="send_reg" value="Зарегистрироваться" class="btn btn-primary mb-3">
+        </form>
+        <p>
+            Либо <a href="/">Авторизуйтесь</a>
+        </p>
+        <?php
+    }
+?>

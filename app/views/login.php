@@ -12,27 +12,22 @@
         }
     }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Авторизация</title>
-</head>
-<body>
-    <?php
-        if ($error) {
-            echo $error;
-        }
-    ?>
-    <form action="/" method="post">
-        <input type="text" name="username" placeholder="Введите логин">
-        <input type="password" name="password" placeholder="Введите пароль">
-        <input type="submit" name="send_auth" value="Авторизоваться">
-    </form>
-    <p>
-        Либо <a href="/?type=reg">Зарегистрируйтесь</a>
-    </p>
-</body>
-</html>
+
+<?php
+    if ($error) {
+        echo $error;
+    }
+?>
+<form action="/" method="post">
+    <div class="mb-3">
+        <input type="text" name="username" placeholder="Введите логин" class="form-control mb-3">
+    </div>
+    <div class="mb-3">
+        <input type="password" name="password" placeholder="Введите пароль" class="form-control mb-3">
+    </div>
+    <input type="submit" name="send_auth" value="Авторизоваться" class="btn btn-primary">
+</form>
+<p>
+    Либо <a href="/?type=reg">Зарегистрируйтесь</a>
+</p>
+

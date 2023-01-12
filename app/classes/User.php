@@ -9,11 +9,31 @@ class User
         $this->db = $db;
     }
 
+    public function getUserByUsername(string $username): ?array
+    {
+        $sql = 'SELECT id, password, date_created as `dc`, date_updated as `du`, is_deleted, is_confirmed FROM users WHERE username = :username';
+        $userData = [
+            'username' => $username
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $user = $stmt->fetch();
+        if ($user) {
+            return $user;
+        }
+        return null;
+    }
+
     /**
      * Добавление нового юзера
      */
-    public function addUser(string $username, string $password) :bool
+    public function addUser(string $username, string $password): bool
     {
+        $user = $this->getUserByUsername($username);
+        if (!empty($user)) {
+            return false;
+        }
         $password = password_hash($password, PASSWORD_DEFAULT);
         // Добавление данных в таблицу
         $sql = 
@@ -34,6 +54,9 @@ class User
         $publisher_id = $this->db->lastInsertId();
         
         if($publisher_id > 0) {
+            $link = $this->createMailTokenLink($username, 'Подтвердите аккаунт');
+            MailHelper::mailData($username, 'Подтверждение аккаунта', 'Перейдите по ссылке для активации аккаунта: ' . $link);
+            MailHelper::mail();
             return true;
         }
 
@@ -43,7 +66,7 @@ class User
     /**
      * Создание токена для авторизации
      */
-    private function setAuth(int $user_id, string $username) :void
+    private function setAuth(int $user_id, string $username): void
     {
         setcookie("token", $this->token, time()+259200, "/", $_SERVER['HTTP_HOST']);
         setcookie("username", $username, time()+259200, "/", $_SERVER['HTTP_HOST']);
@@ -60,18 +83,14 @@ class User
     /**
      * Авторизация пользователя
      */
-    public function auth(string $username, string $password) :bool
+    public function auth(string $username, string $password): bool
     {   
         // Выбирает данные из таблицы
-        $sql = 'SELECT id, password FROM users WHERE username = :username';
-        $userData = [
-            'username' => $username
-        ];
+        $user = $this->getUserByUsername($username);
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $user = $stmt->fetch();
-       
+        if (empty($user)) {
+            return false;
+        }
         if (password_verify($password, $user['password'])) {
             $this->token = Helper::tokenGenerate();
             $this->setAuth($user['id'], $username);
@@ -84,7 +103,7 @@ class User
     /**
      * Сравнение значений куки со значениями в БД для проверки авторизации
      */
-    public function checkAuth(string $username, string $token) :bool
+    public function checkAuth(string $username, string $token): bool
     {
         $sql = 'SELECT token FROM users WHERE username = :username';
         $userData = [
@@ -105,9 +124,129 @@ class User
     /**
      * Удаление куки
      */
-    public function logout() :void
+    public function logout(): void
     {
         setcookie("token", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
         setcookie("username", '', time()-259200, "/", $_SERVER['HTTP_HOST']);
+    }
+
+    /**
+     * Установка значений в поля в ЛК
+     */
+    public function setName(int $user_id, array $data): bool
+    {
+        if (empty($this->getUserInfo($user_id))) {
+            $sql = 
+            'INSERT INTO user_info (id_user, name, surname, birthday, sex, city, date_created) VALUES (:id_user, :name, :surname, :birthday, :sex, :city, :date_created)';
+
+            $userData = [
+                'id_user' => $user_id,
+                'date_created' => date('Y-m-d H:i:s')
+            ];
+        } else {
+            $sql = 'UPDATE user_info SET name = :name, surname = :surname, birthday = :birthday, sex = :sex, city = :city, date_updated = :date_updated WHERE id_user = :id_user';
+
+            $userData = [
+                'id_user' => $user_id,
+                'date_updated' => date('Y-m-d H:i:s')
+            ];
+        }
+
+        $userData = array_merge($data, $userData);
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Получение личной информации о пользователе
+     */
+    public function getUserInfo(int $user_id): ?array
+    {
+        $sql = 'SELECT id, id_user, name, surname, birthday, sex, city FROM user_info WHERE id_user = :id_user';
+        $userData = [
+            'id_user' => $user_id
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $userInfo = $stmt->fetch();
+
+        if (!$userInfo) {
+            return NULL;
+        }
+        
+        return $userInfo;
+    }
+
+    /**
+     * Удаление и восстановление аккаунта
+     */
+    public function changeAccessProfile(string $username, int $status): bool
+    {
+        $sql = 'UPDATE users SET is_deleted = :is_deleted, date_updated = :date_updated WHERE username = :username';
+        $userData = [
+            'username' => $username,
+            'is_deleted' => $status,
+            'date_updated' => date('Y-m-d H:i:s')
+        ];
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Создание ссылки для потверждения аккаунта при регистрации
+     */
+    private function createMailTokenLink(string $username, string $message): ?string
+    {
+        $token = Helper::tokenGenerate(78);
+        $path = $_SERVER['HTTP_HOST'];
+        $link = "<a href='http://$path/confirm.php?token=$token&email=$username'>$message</a>";
+
+        $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated WHERE username = :username';
+        $userData = [
+            'username' => $username,
+            'token_confirm' => $token,
+            'date_updated' => date('Y-m-d H:i:s')
+        ];
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return $link;
+        }
+        return null;
+    }
+
+    public function confirmProfile(string $username, string $token): bool
+    {
+        $sql = 'SELECT token_confirm FROM users WHERE username = :username';
+        $userData = [
+            'username' => $username
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $userToken = $stmt->fetch();
+
+        if ($token == $userToken['token_confirm']) {
+            $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated, is_confirmed = :is_confirmed WHERE username = :username';
+            $userData = [
+                'username' => $username,
+                'token_confirm' => '',
+                'date_updated' => date('Y-m-d H:i:s'),
+                'is_confirmed' => 1
+            ];
+            $statement = $this->db->prepare($sql);
+            if ($statement->execute($userData)){
+                return true;
+            }
+        }
+
+        return false;
     }
 }
