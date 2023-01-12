@@ -23,8 +23,8 @@ class MailHelper
 
         // Авторизация
         $mail->CharSet = 'UTF-8';
-        $mail->From = 'pawlencko.alena2010@yandex.ru';
-        $mail->FromName = 'Елена';
+        $mail->From = MAIL_USER;
+        $mail->FromName = SITE_NAME;
         $mail->addAddress(self::$mailTo);
 
         // Контент                   
