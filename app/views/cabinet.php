@@ -28,11 +28,15 @@
         ]);
     }
 
+    if (isset($_POST['send_again'])) {
+        $user->sendConfirmToken($_COOKIE['username']);
+        header('Location: /');
+    }
+
     $userInfo = $user->getUserInfo($userData['id']);
 
     $date = new DateTime(date('Y-m-d H:i'), new DateTimeZone(date_default_timezone_get()));
     $date->setTimezone(new DateTimeZone('Europe/London'));
-
 ?>
 
 <?php if ($userData['is_deleted'] == 1) :?>
@@ -59,6 +63,13 @@
                 <div class="alert alert-warning" role="alert">
                     Подтвердите Ваш аккаунт. Мы отправили вам письмо на <u><?= $_COOKIE['username']; ?></u> 
                 </div>
+                <?php if(!$user->checkConfirmMessageDate($_COOKIE['username'])): ?>
+                    <p>Повторно отправить сообщение можно будет через час.</p>
+                <?php else: ?>
+                    <form action="/" method="post" class="mt-3 d-flex justify-content-end">
+                        <button type="submit" name="send_again" class="btn btn-info">Отправить ссылку еще раз</button>
+                    </form>
+                <?php endif; ?>
                 <form action="/" method="post" class="mt-3 d-flex justify-content-end">
                     <button type="submit" name="log_out" class="btn btn-danger">Выйти</button>
                 </form>
@@ -100,8 +111,9 @@
                 <input type="text" name="surname" placeholder="Фамилия" class="form-control mb-3" value="<?= $userInfo['surname'] ?? ''; ?>">
                 <input type="date" name="birthday" placeholder="Дата рождения" class="form-control mb-3" value="<?= $userInfo['birthday'] ?? ''; ?>">
                 <select name="sex" class="form-select mb-3" >
-                    <option value="male" <?= $userInfo['sex'] == 'male' ? 'selected' : ''; ?>>Мужчина</option>
-                    <option value="female" <?= $userInfo['sex'] == 'female' ? 'selected' : ''; ?>>Женщина</option>
+                    <?php $sex = isset($userInfo['sex']) ? $userInfo['sex'] : ''; ?>
+                    <option value="male" <?= $sex == 'male' ? 'selected' : ''; ?>>Мужчина</option>
+                    <option value="female" <?= $sex == 'female' ? 'selected' : ''; ?>>Женщина</option>
                 </select>
                 <input type="text" name="city" placeholder="Город" class="form-control mb-3" value="<?= $userInfo['city'] ?? ''; ?>">
                 <button type="submit" name="save" class="btn btn-info ms-auto d-block">Сохранить</button>

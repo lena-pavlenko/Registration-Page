@@ -54,13 +54,18 @@ class User
         $publisher_id = $this->db->lastInsertId();
         
         if($publisher_id > 0) {
-            $link = $this->createMailTokenLink($username, 'Подтвердите аккаунт');
-            MailHelper::mailData($username, 'Подтверждение аккаунта', 'Перейдите по ссылке для активации аккаунта: ' . $link);
-            MailHelper::mail();
+            $this->sendConfirmToken($username);
             return true;
         }
 
         return false;
+    }
+
+    public function sendConfirmToken(string $username): void
+    {
+        $link = $this->createMailTokenLink($username, 'Подтвердите аккаунт');
+        MailHelper::mailData($username, 'Подтверждение аккаунта', 'Перейдите по ссылке для активации аккаунта: ' . $link);
+        MailHelper::mail();
     }
 
     /**
@@ -209,11 +214,13 @@ class User
         $path = $_SERVER['HTTP_HOST'];
         $link = "<a href='http://$path/confirm.php?token=$token&email=$username'>$message</a>";
 
-        $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated WHERE username = :username';
+        $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated, date_message = :date_message WHERE username = :username';
+        $date = date('Y-m-d H:i:s');
         $userData = [
             'username' => $username,
             'token_confirm' => $token,
-            'date_updated' => date('Y-m-d H:i:s')
+            'date_updated' => $date,
+            'date_message' => $date
         ];
         $statement = $this->db->prepare($sql);
         if ($statement->execute($userData)){
@@ -248,5 +255,21 @@ class User
         }
 
         return false;
+    }
+
+    public function checkConfirmMessageDate(string $username): bool
+    {
+        $sql = 'SELECT date_message FROM users WHERE username = :username';
+        $userData = [
+            'username' => $username
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $userDateUpdate = $stmt->fetch();
+
+        $updateSec = strtotime($userDateUpdate['date_message']);
+        
+        return (time() - $updateSec) > 3600;
     }
 }
