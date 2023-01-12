@@ -33,14 +33,7 @@ class MailHelper
         $mail->Body    = self::$message;
 
         // Отправка
-        if(!$mail->send()) {
-            echo 'Сообщение не может быть отправлено.';
-            echo 'Ошибка: ' . $mail->ErrorInfo;
-            exit;
-        }
-        else{
-            echo 'Сообщение отправлено.';
-        }
+        $mail->send();
     }
 
     public static function mailData(string $mailTo, string $subject, string $message)
