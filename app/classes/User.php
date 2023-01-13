@@ -1,14 +1,18 @@
 <?php
 class User
 {
-    private $db;
-    private $token;
+    private object $db;
+    private string $token;
+    private array $uploadImageErrors = [];
 
     public function __construct($db)
     {
         $this->db = $db;
     }
 
+    /**
+     * Получение данных о пользователе по логину
+     */
     public function getUserByUsername(string $username): ?array
     {
         $sql = 'SELECT id, password, date_created as `dc`, date_updated as `du`, is_deleted, is_confirmed FROM users WHERE username = :username';
@@ -18,7 +22,7 @@ class User
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($userData); 
-        $user = $stmt->fetch();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($user) {
             return $user;
         }
@@ -61,6 +65,9 @@ class User
         return false;
     }
 
+    /**
+     * Отправка ссылки с токеном для подтверждения аккаунта
+     */
     public function sendConfirmToken(string $username): void
     {
         $link = $this->createMailTokenLink($username, 'Подтвердите аккаунт');
@@ -117,7 +124,7 @@ class User
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($userData); 
-        $user = $stmt->fetch();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user['token'] == $token) {
             return true;
@@ -171,14 +178,14 @@ class User
      */
     public function getUserInfo(int $user_id): ?array
     {
-        $sql = 'SELECT id, id_user, name, surname, birthday, sex, city FROM user_info WHERE id_user = :id_user';
+        $sql = 'SELECT id, id_user, name, surname, birthday, sex, city, photo FROM user_info WHERE id_user = :id_user';
         $userData = [
             'id_user' => $user_id
         ];
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($userData); 
-        $userInfo = $stmt->fetch();
+        $userInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$userInfo) {
             return NULL;
@@ -229,6 +236,9 @@ class User
         return null;
     }
 
+    /**
+     * Подтверждение профиля/обновление бд после перехода по ссылке
+     */
     public function confirmProfile(string $username, string $token): bool
     {
         $sql = 'SELECT token_confirm FROM users WHERE username = :username';
@@ -238,7 +248,7 @@ class User
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($userData); 
-        $userToken = $stmt->fetch();
+        $userToken = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($token == $userToken['token_confirm']) {
             $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated, is_confirmed = :is_confirmed WHERE username = :username';
@@ -257,6 +267,9 @@ class User
         return false;
     }
 
+    /**
+     * Проверка времени, прошедшего после отправки последнего сообщения для подтверждения аккаунта
+     */
     public function checkConfirmMessageDate(string $username): bool
     {
         $sql = 'SELECT date_message FROM users WHERE username = :username';
@@ -266,10 +279,82 @@ class User
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($userData); 
-        $userDateUpdate = $stmt->fetch();
+        $userDateUpdate = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $updateSec = strtotime($userDateUpdate['date_message']);
         
         return (time() - $updateSec) > 3600;
+    }
+
+    /**
+     * Загрузка фото пользователя
+     */
+    public function uploadUserPhoto($user_id): bool
+    {
+        if (empty($_FILES["user_photo"]["tmp_name"])) {
+            return false;
+        }
+        $target_dir = "uploads/";
+        $target_file = $target_dir . time() . basename($_FILES["user_photo"]["name"]);
+        $uploadOk = 1;
+        $imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
+
+        // Check if image file is a actual image or fake image
+        $check = getimagesize($_FILES["user_photo"]["tmp_name"]);
+        if($check !== false) {
+            $uploadOk = 1;
+        } else {
+            $uploadOk = 0;
+            $this->uploadImageErrors[] = 'Загрузите изображение!';
+        }
+        // Check if file already exists
+        if (file_exists($target_file)) {
+            $uploadOk = 0;
+            $this->uploadImageErrors[] = 'Такой файл уже существует на сервере!';
+        }
+        // Check file size
+        if ($_FILES["user_photo"]["size"] > 5000000) {
+            $uploadOk = 0;
+            $this->uploadImageErrors[] = 'Размер файла не должен превышать 5 Мб!';
+        }
+        // Allow certain file formats
+        if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg"
+        && $imageFileType != "gif" ) {
+            $this->uploadImageErrors[] = 'Допустимые расширения: jpg, png, jpeg, gif!';
+            $uploadOk = 0;
+        }
+        // Check if $uploadOk is set to 0 by an error
+        if ($uploadOk == 0) {
+            $this->uploadImageErrors[] = 'Простите, Ваш файл не удалось загрузить!';
+        // if everything is ok, try to upload file
+        } else {
+            if (move_uploaded_file($_FILES["user_photo"]["tmp_name"], $target_file)) {
+                $this->saveUserPhoto($user_id, $target_file);
+                return true;
+            } else {
+                $this->uploadImageErrors[] = 'Простите, Ваш файл не удалось загрузить!';
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Сохранение фото пользователя в бд
+     */
+    private function saveUserPhoto(string $user_id, string $path): bool
+    {
+        $sql = 'UPDATE user_info SET photo = :photo, date_updated = :date_updated WHERE id_user = :id_user';
+        $userData = [
+            'id_user' => $user_id,
+            'date_updated' => date('Y-m-d H:i:s'),
+            'photo' => $path
+        ];
+        $statement = $this->db->prepare($sql);
+        if ($statement->execute($userData)){
+            return true;
+        }
+
+        return false;
     }
 }
