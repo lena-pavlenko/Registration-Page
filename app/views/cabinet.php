@@ -34,9 +34,24 @@
     }
 
     $userInfo = $user->getUserInfo($userData['id']);
+    if (is_array($userInfo)){
+        extract($userInfo);
+    }
 
     $date = new DateTime(date('Y-m-d H:i'), new DateTimeZone(date_default_timezone_get()));
     $date->setTimezone(new DateTimeZone('Europe/London'));
+
+    // echo '<pre>';
+    // var_dump($_FILES);
+    // echo '</pre>';
+
+    if(isset($_POST["load_photo"])) {
+        if ($user->uploadUserPhoto($userData['id'])) {
+            header('Location: /');
+        }
+        
+    }
+    
 ?>
 
 <?php if ($userData['is_deleted'] == 1) :?>
@@ -44,7 +59,7 @@
         <div class="col-12 ">
             <div class="card p-3">
                 <h1>Личный кабинет</h1>
-                <p>Приветствуем вас, <?= $userInfo['name'] ? $userInfo['name'] : $_COOKIE['username']; ?></p>
+                <p>Приветствуем вас, <?= $name ?? $_COOKIE['username']; ?></p>
                 <div class="alert alert-warning" role="alert">
                     Ваш аккаунт был удален <?= $userData['du']; ?>
                 </div>
@@ -59,7 +74,7 @@
         <div class="col-12 ">
             <div class="card p-3">
                 <h1>Личный кабинет</h1>
-                <p>Приветствуем вас, <?= isset($userInfo['name']) ? $userInfo['name'] : $_COOKIE['username']; ?></p>
+                <p>Приветствуем вас, <?= $name ?? $_COOKIE['username']; ?></p>
                 <div class="alert alert-warning" role="alert">
                     Подтвердите Ваш аккаунт. Мы отправили вам письмо на <u><?= $_COOKIE['username']; ?></u> 
                 </div>
@@ -81,7 +96,7 @@
     <div class="col-12 ">
         <div class="card p-3">
             <h1>Личный кабинет</h1>
-            <p>Приветствуем вас, <?= isset($userInfo['name']) ? $userInfo['name'] : $_COOKIE['username']; ?></p>
+            <p>Приветствуем вас, <?= empty($name) ? $_COOKIE['username'] : $name; ?></p>
         </div>
     </div>
 </div>
@@ -106,16 +121,28 @@
     </div>
     <div class="col-lg-8">
         <div class="card p-3">
+            <div class="card__photo-box">
+                <div class="card__photo">
+                    <?php if (!empty($photo)): ?>
+                        <img src="/<?= $photo; ?>" alt="<?= empty($name) ? $_COOKIE['username'] : $name; ?>">
+                    <?php endif; ?>
+                </div>
+                <form action="/" method="post" enctype="multipart/form-data">
+                    <input type="file" name="user_photo" class="form-control mb-3 mt-3" accept="image/*,image/jpeg">
+                    <button type="submit" name="load_photo" class="btn btn-info ms-auto d-block">Загрузить фото</button>
+                </form>
+            </div>
+            
             <form action="/" method="post">
-                <input type="text" name="name" placeholder="Имя" class="form-control mb-3 mt-3" value="<?= $userInfo['name'] ?? ''; ?>">
-                <input type="text" name="surname" placeholder="Фамилия" class="form-control mb-3" value="<?= $userInfo['surname'] ?? ''; ?>">
-                <input type="date" name="birthday" placeholder="Дата рождения" class="form-control mb-3" value="<?= $userInfo['birthday'] ?? ''; ?>">
+                <input type="text" name="name" placeholder="Имя" class="form-control mb-3 mt-3" value="<?= $name ?? ''; ?>">
+                <input type="text" name="surname" placeholder="Фамилия" class="form-control mb-3" value="<?= $surname ?? ''; ?>">
+                <input type="date" name="birthday" placeholder="Дата рождения" class="form-control mb-3" value="<?= $birthday ?? ''; ?>">
                 <select name="sex" class="form-select mb-3" >
-                    <?php $sex = isset($userInfo['sex']) ? $userInfo['sex'] : ''; ?>
+                    <?php $sex = $sex ?? ''; ?>
                     <option value="male" <?= $sex == 'male' ? 'selected' : ''; ?>>Мужчина</option>
                     <option value="female" <?= $sex == 'female' ? 'selected' : ''; ?>>Женщина</option>
                 </select>
-                <input type="text" name="city" placeholder="Город" class="form-control mb-3" value="<?= $userInfo['city'] ?? ''; ?>">
+                <input type="text" name="city" placeholder="Город" class="form-control mb-3" value="<?= $city ?? ''; ?>">
                 <button type="submit" name="save" class="btn btn-info ms-auto d-block">Сохранить</button>
             </form>
         </div>
