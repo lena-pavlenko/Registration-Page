@@ -10,6 +10,19 @@ require 'app/classes/MailHelper.php';
 // Создаем экземпляр класса PDO (PHP Data Objects) - для работы с базой данных
 $db = new Db();
 
+$test = $db->select(
+    'user_info', 
+    [
+        'name', 'photo'
+    ],
+    [
+        'sex' => 'male',
+        'city' => 'Волгоград'
+    ]
+);
+
+var_dump($test);
+
 if (!$db->connect) {
     die('Нужно подключиться к базе данных');
 }

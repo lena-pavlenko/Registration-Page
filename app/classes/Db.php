@@ -11,4 +11,32 @@ class Db
             $this->connect = null;
         }
     }
+
+    public function select(string $table, array $fields, array $params): ?array
+    {
+        if(!$this->connect) {
+            return null;
+        }
+        
+        $sql = 'SELECT ';
+        foreach ($fields as $value) {
+            $sql .= $value . ',';
+        }
+        $sql = substr($sql, 0, -1);
+        $sql .= ' FROM ' . $table . ' WHERE ';
+        $and = ' AND ';
+        $count = 0;
+        foreach ($params as $key => $value) {
+            $count++;
+            if ($count > 1 && $count <= count($params)) {
+                $sql .= $and;
+            }
+            $sql .= $key . ' = :' . $key;
+        }
+        $stmt = $this->connect->prepare($sql);
+        $stmt->execute($params); 
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $data;
+    }
 }

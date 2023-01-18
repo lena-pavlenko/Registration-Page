@@ -344,17 +344,54 @@ class User
      */
     private function saveUserPhoto(string $user_id, string $path): bool
     {
-        $sql = 'UPDATE user_info SET photo = :photo, date_updated = :date_updated WHERE id_user = :id_user';
+        $sql = 'SELECT photo FROM user_info WHERE id_user = :id_user';
         $userData = [
-            'id_user' => $user_id,
-            'date_updated' => date('Y-m-d H:i:s'),
-            'photo' => $path
+            'id_user' => $user_id
         ];
-        $statement = $this->db->prepare($sql);
-        if ($statement->execute($userData)){
-            return true;
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($userData); 
+        $userPhoto = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$userPhoto) {
+            $sql = 
+            'INSERT INTO user_info (id_user, photo, date_created) VALUES (:id_user, :photo, :date_created)';
+
+            $userData = [
+                'id_user' => $user_id,
+                'photo' => $path,
+                'date_created' => date('Y-m-d H:i:s')
+            ];
+            $statement = $this->db->prepare($sql);
+            if ($statement->execute($userData)){
+                return true;
+            }
+        } else {
+            $this->deleteUserPhoto($userPhoto['photo']);
+            $sql = 'UPDATE user_info SET photo = :photo, date_updated = :date_updated WHERE id_user = :id_user';
+            $userData = [
+                'id_user' => $user_id,
+                'date_updated' => date('Y-m-d H:i:s'),
+                'photo' => $path
+            ];
+            $statement = $this->db->prepare($sql);
+            if ($statement->execute($userData)){
+                return true;
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Удаление файла
+     */
+    private function deleteUserPhoto(string $path): void
+    {
+        $path = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR .  $path;
+        if (file_exists($path)) {
+            unlink($path);
+        }
+        
     }
 }
