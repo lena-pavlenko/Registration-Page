@@ -1,5 +1,5 @@
 <?php
-    $user = new User($db->connect);
+    $user = new User($db, $db->connect);
     $userData = $user->getUserByUsername($_COOKIE['username']);
 
     if (isset($_POST['delete_profile'])) {

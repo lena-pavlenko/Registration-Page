@@ -19,13 +19,21 @@ class Db
         }
         
         $sql = 'SELECT ';
-        foreach ($fields as $value) {
+
+        foreach ($fields as $key => $value) {
+
+            if (!is_numeric($key)) {
+                $sql .= $key . ' as `' . $value . '`,';
+                continue;
+            }
             $sql .= $value . ',';
         }
+
         $sql = substr($sql, 0, -1);
         $sql .= ' FROM ' . $table . ' WHERE ';
         $and = ' AND ';
         $count = 0;
+
         foreach ($params as $key => $value) {
             $count++;
             if ($count > 1 && $count <= count($params)) {
@@ -33,10 +41,30 @@ class Db
             }
             $sql .= $key . ' = :' . $key;
         }
+
         $stmt = $this->connect->prepare($sql);
         $stmt->execute($params); 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        return $data;
+    }
+
+    public function find(int $id, string $table): ?array
+    {
+        if(!$this->connect) {
+            return null;
+        }
+        
+        $sql = 'SELECT * FROM ' . $table . ' WHERE id = :id';
+        
+        $dataArray = [
+            'id' => $id
+        ];
+
+        $stmt = $this->connect->prepare($sql);
+        $stmt->execute($dataArray); 
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        
         return $data;
     }
 }

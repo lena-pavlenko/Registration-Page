@@ -2,12 +2,14 @@
 class User
 {
     private object $db;
+    private object $Db;
     private string $token;
     private array $uploadImageErrors = [];
 
-    public function __construct($db)
+    public function __construct($db, $connect)
     {
-        $this->db = $db;
+        $this->db = $connect;
+        $this->Db = $db;
     }
 
     /**
@@ -15,18 +17,17 @@ class User
      */
     public function getUserByUsername(string $username): ?array
     {
-        $sql = 'SELECT id, password, date_created as `dc`, date_updated as `du`, is_deleted, is_confirmed FROM users WHERE username = :username';
         $userData = [
             'username' => $username
         ];
+        
+        $user = $this->Db->select(
+            'users',
+            ['id', 'password', 'date_created' => 'dc', 'date_updated' => 'du', 'is_deleted', 'is_confirmed'],
+            $userData
+        );
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($user) {
-            return $user;
-        }
-        return null;
+        return $user;
     }
 
     /**
