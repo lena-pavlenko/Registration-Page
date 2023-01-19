@@ -20,4 +20,11 @@ class Helper
         $convertedTime = "$hours ч. $min мин. $sec сек.";
         return $convertedTime;
     }
+
+    public static function dd(...$data): void
+    {
+        echo '<pre>';
+        var_dump($data);
+        echo '</pre>';
+    }
 }

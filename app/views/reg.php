@@ -7,7 +7,7 @@
             $error = 'Пароли не совпадают';
         }
         $password = $_POST['password'];
-        $user = new User($db->connect);
+        $user = new User($db, $db->connect);
         if (!$error) {
             if ($user->addUser($login, $password)) {
                 $success = 'Вы успешно зарегистрированы. <a href="/">Личный кабинет</a>';

@@ -4,7 +4,7 @@
     if (isset($_POST['send_auth'])) {
         $login = trim($_POST['username']);
         $password = $_POST['password'];
-        $user = new User($db->connect);
+        $user = new User($db, $db->connect);
         if (!$user->auth($login, $password)) {
             $error = 'Данные не верны';
         } else {

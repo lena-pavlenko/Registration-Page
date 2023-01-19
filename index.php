@@ -16,7 +16,7 @@ if (!$db->connect) {
 ob_start();
 // Подключение файлов для регистрации и авторизации
 if (isset($_COOKIE['token']) && isset($_COOKIE['username'])) {
-    $user = new User($db->connect);
+    $user = new User($db, $db->connect);
 
  
     if ($user->checkAuth($_COOKIE['username'], $_COOKIE['token'])) {
