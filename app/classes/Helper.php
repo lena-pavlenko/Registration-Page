@@ -23,8 +23,11 @@ class Helper
 
     public static function dd(...$data): void
     {
-        echo '<pre>';
-        var_dump($data);
-        echo '</pre>';
+        foreach ($data as $value) {
+            echo '<pre>';
+            var_dump($value);
+            echo '</pre>';
+        }
+        
     }
 }

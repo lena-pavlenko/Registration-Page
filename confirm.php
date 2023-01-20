@@ -12,7 +12,7 @@ if (!$db->connect) {
     die('Нужно подключиться к базе данных');
 }
 if (isset($_GET['email']) && isset($_GET['token'])) {
-    $user = new User($db->connect);
+    $user = new User($db, $db->connect);
     if ($user->confirmProfile($_GET['email'], $_GET['token'])) {
         MailHelper::mailData($_GET['email'], 'Поздравляем!', 'Вы успешно подтвердили свой аккаунт!');
         echo 'Аккаунт подтвержден. <a href="/">Личный кабинет</a>';
