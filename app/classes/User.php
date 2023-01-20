@@ -83,14 +83,14 @@ class User
     {
         setcookie("token", $this->token, time()+259200, "/", $_SERVER['HTTP_HOST']);
         setcookie("username", $username, time()+259200, "/", $_SERVER['HTTP_HOST']);
-        $sql = 'UPDATE users SET token = :token, date_updated = :date_updated WHERE id = :id';
-        $userData = [
+
+        $fields = [
             'token' => $this->token,
             'date_updated' => date('Y-m-d H:i:s'),
-            'id' => $user_id
         ];
-        $stmt= $this->db->prepare($sql);
-        $stmt->execute($userData);
+        $params = ['id' => $user_id];
+
+        $this->Db->update('users', $fields, $params);
     }
 
     /**
@@ -118,16 +118,13 @@ class User
      */
     public function checkAuth(string $username, string $token): bool
     {
-        $sql = 'SELECT token FROM users WHERE username = :username';
         $userData = [
             'username' => $username
         ];
+        
+        $userToken = $this->Db->select('users', ['token'], $userData);
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($user['token'] == $token) {
+        if ($userToken['token'] == $token) {
             return true;
         }
 
@@ -156,19 +153,21 @@ class User
                 'id_user' => $user_id,
                 'date_created' => date('Y-m-d H:i:s')
             ];
+
+            $userData = array_merge($data, $userData);
+            $statement = $this->db->prepare($sql);
+
+            if ($statement->execute($userData)){
+                return true;
+            }
         } else {
-            $sql = 'UPDATE user_info SET name = :name, surname = :surname, birthday = :birthday, sex = :sex, city = :city, date_updated = :date_updated WHERE id_user = :id_user';
-
-            $userData = [
-                'id_user' => $user_id,
-                'date_updated' => date('Y-m-d H:i:s')
+            $fields = [
+                'date_updated' => date('Y-m-d H:i:s'),
             ];
-        }
-
-        $userData = array_merge($data, $userData);
-        $statement = $this->db->prepare($sql);
-        if ($statement->execute($userData)){
-            return true;
+            $fields = array_merge($data, $fields);
+            $params = ['id_user' => $user_id];
+    
+            return $this->Db->update('user_info', $fields, $params);
         }
         
         return false;
@@ -179,18 +178,15 @@ class User
      */
     public function getUserInfo(int $user_id): ?array
     {
-        $sql = 'SELECT id, id_user, name, surname, birthday, sex, city, photo FROM user_info WHERE id_user = :id_user';
         $userData = [
             'id_user' => $user_id
         ];
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $userInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$userInfo) {
-            return NULL;
-        }
+        
+        $userInfo = $this->Db->select(
+            'user_info', 
+            ['id', 'id_user', 'name', 'surname', 'birthday', 'sex', 'city', 'photo'], 
+            $userData
+        );
         
         return $userInfo;
     }
@@ -200,17 +196,13 @@ class User
      */
     public function changeAccessProfile(string $username, int $status): bool
     {
-        $sql = 'UPDATE users SET is_deleted = :is_deleted, date_updated = :date_updated WHERE username = :username';
-        $userData = [
-            'username' => $username,
+        $fields = [
             'is_deleted' => $status,
             'date_updated' => date('Y-m-d H:i:s')
         ];
-        $statement = $this->db->prepare($sql);
-        if ($statement->execute($userData)){
-            return true;
-        }
-        return false;
+        $params = ['username' => $username];
+
+        return $this->Db->update('users', $fields, $params);
     }
 
     /**
@@ -222,19 +214,15 @@ class User
         $path = $_SERVER['HTTP_HOST'];
         $link = "<a href='http://$path/confirm.php?token=$token&email=$username'>$message</a>";
 
-        $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated, date_message = :date_message WHERE username = :username';
         $date = date('Y-m-d H:i:s');
-        $userData = [
-            'username' => $username,
+        $fields = [
             'token_confirm' => $token,
             'date_updated' => $date,
             'date_message' => $date
         ];
-        $statement = $this->db->prepare($sql);
-        if ($statement->execute($userData)){
-            return $link;
-        }
-        return null;
+        $params = ['username' => $username];
+
+        return $this->Db->update('users', $fields, $params) ?  $link : null;
     }
 
     /**
@@ -242,27 +230,22 @@ class User
      */
     public function confirmProfile(string $username, string $token): bool
     {
-        $sql = 'SELECT token_confirm FROM users WHERE username = :username';
         $userData = [
             'username' => $username
         ];
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $userToken = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $userToken = $this->Db->select('users', ['token_confirm'], $userData);
 
         if ($token == $userToken['token_confirm']) {
-            $sql = 'UPDATE users SET token_confirm = :token_confirm, date_updated = :date_updated, is_confirmed = :is_confirmed WHERE username = :username';
-            $userData = [
-                'username' => $username,
+
+            $fields = [
                 'token_confirm' => '',
                 'date_updated' => date('Y-m-d H:i:s'),
                 'is_confirmed' => 1
             ];
-            $statement = $this->db->prepare($sql);
-            if ($statement->execute($userData)){
-                return true;
-            }
+            $params = ['username' => $username];
+    
+           return $this->Db->update('users', $fields, $params);
         }
 
         return false;
@@ -273,14 +256,11 @@ class User
      */
     public function checkConfirmMessageDate(string $username): bool
     {
-        $sql = 'SELECT date_message FROM users WHERE username = :username';
         $userData = [
             'username' => $username
         ];
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $userDateUpdate = $stmt->fetch(PDO::FETCH_ASSOC);
+        $userDateUpdate = $this->Db->select('users', ['date_message'], $userData);
 
         $updateSec = strtotime($userDateUpdate['date_message']);
         
@@ -345,14 +325,11 @@ class User
      */
     private function saveUserPhoto(string $user_id, string $path): bool
     {
-        $sql = 'SELECT photo FROM user_info WHERE id_user = :id_user';
         $userData = [
             'id_user' => $user_id
         ];
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($userData); 
-        $userPhoto = $stmt->fetch(PDO::FETCH_ASSOC);
+        $userPhoto = $this->Db->select('user_info', ['photo'], $userData);
 
         if (!$userPhoto) {
             $sql = 
@@ -369,16 +346,14 @@ class User
             }
         } else {
             $this->deleteUserPhoto($userPhoto['photo']);
-            $sql = 'UPDATE user_info SET photo = :photo, date_updated = :date_updated WHERE id_user = :id_user';
-            $userData = [
-                'id_user' => $user_id,
+
+            $fields = [
                 'date_updated' => date('Y-m-d H:i:s'),
                 'photo' => $path
             ];
-            $statement = $this->db->prepare($sql);
-            if ($statement->execute($userData)){
-                return true;
-            }
+            $params = ['id_user' => $user_id];
+    
+            return $this->Db->update('user_info', $fields, $params);
         }
 
         return false;
