@@ -316,7 +316,7 @@ class User
         ];
 
         $userPhoto = $this->Db->select('user_info', ['photo'], $userData);
-        Helper::dd($userPhoto);
+        
         if (!$userPhoto) {
             $userData = [
                 'id_user' => $user_id,
