@@ -80,6 +80,32 @@ class Db
         return $stmt->execute($data); 
     }
 
+    public function insert($table, $fields): bool
+    {
+        if(!$this->connect) {
+            return null;
+        }
+        
+        $sql = 'INSERT INTO ' . $table . ' (';
+
+        foreach ($fields as $key => $value) {
+            $sql .= $key . ',';
+        }
+        $sql = substr($sql, 0, -1);
+
+        $sql .= ') VALUES (';
+
+        foreach ($fields as $key => $value) {
+            $sql .= ':' . $key . ',';
+        }
+        $sql = substr($sql, 0, -1);
+
+        $sql .= ')';
+
+        $statement = $this->connect->prepare($sql);
+        return $statement->execute($fields);
+    }
+
     public function find(int $id, string $table): ?array
     {
         if(!$this->connect) {

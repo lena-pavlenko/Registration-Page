@@ -40,12 +40,8 @@ class User
             return false;
         }
         $password = password_hash($password, PASSWORD_DEFAULT);
+
         // Добавление данных в таблицу
-        $sql = 
-        'INSERT INTO users 
-        (username, password, date_created, is_confirmed, is_deleted) 
-        VALUES 
-        (:username, :password, :date_created, :is_confirmed, :is_deleted)';
         $userData = [
             'username' => $username,
             'password' => $password,
@@ -53,12 +49,8 @@ class User
             'is_confirmed' => 0,
             'is_deleted' => 0
         ];
-
-        $statement = $this->db->prepare($sql);
-        $statement->execute($userData);
-        $publisher_id = $this->db->lastInsertId();
         
-        if($publisher_id > 0) {
+        if($this->Db->insert('users', $userData)) {
             $this->sendConfirmToken($username);
             return true;
         }
@@ -124,7 +116,7 @@ class User
         
         $userToken = $this->Db->select('users', ['token'], $userData);
 
-        if ($userToken['token'] == $token) {
+        if (isset($userToken['token']) && $userToken['token'] == $token) {
             return true;
         }
 
@@ -146,20 +138,14 @@ class User
     public function setName(int $user_id, array $data): bool
     {
         if (empty($this->getUserInfo($user_id))) {
-            $sql = 
-            'INSERT INTO user_info (id_user, name, surname, birthday, sex, city, date_created) VALUES (:id_user, :name, :surname, :birthday, :sex, :city, :date_created)';
 
-            $userData = [
+            $fields = [
                 'id_user' => $user_id,
                 'date_created' => date('Y-m-d H:i:s')
             ];
+            $fields = array_merge($data, $fields);
 
-            $userData = array_merge($data, $userData);
-            $statement = $this->db->prepare($sql);
-
-            if ($statement->execute($userData)){
-                return true;
-            }
+            return $this->Db->insert('user_info', $fields);
         } else {
             $fields = [
                 'date_updated' => date('Y-m-d H:i:s'),
@@ -330,22 +316,18 @@ class User
         ];
 
         $userPhoto = $this->Db->select('user_info', ['photo'], $userData);
-
+        
         if (!$userPhoto) {
-            $sql = 
-            'INSERT INTO user_info (id_user, photo, date_created) VALUES (:id_user, :photo, :date_created)';
-
             $userData = [
                 'id_user' => $user_id,
                 'photo' => $path,
                 'date_created' => date('Y-m-d H:i:s')
             ];
-            $statement = $this->db->prepare($sql);
-            if ($statement->execute($userData)){
-                return true;
-            }
+
+            return $this->Db->insert('user_info', $userData);
         } else {
-            $this->deleteUserPhoto($userPhoto['photo']);
+            $photoPath = $userPhoto['photo'] ?? '';
+            $this->deleteUserPhoto($photoPath);
 
             $fields = [
                 'date_updated' => date('Y-m-d H:i:s'),
